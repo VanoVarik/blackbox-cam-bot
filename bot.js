@@ -111,7 +111,29 @@ app.post('/register', (req, res) => {
     }
 });
 
-bot.launch();
-app.listen(process.env.SERVER_PORT || 3000, function() {
-    console.log('Bot started on port ' + (process.env.SERVER_PORT || 3000));
+// ---------- ВЕБХУК (вместо bot.launch()) ----------
+// Эндпоинт для вебхука
+app.post('/webhook', (req, res) => {
+    bot.handleUpdate(req.body, res);
+});
+
+// Удалить старый вебхук и установить новый
+bot.telegram.deleteWebhook({ drop_pending_updates: true })
+    .then(() => {
+        console.log('Old webhook deleted');
+        const webhookUrl = process.env.RENDER_EXTERNAL_URL + '/webhook';
+        return bot.telegram.setWebhook(webhookUrl);
+    })
+    .then(() => {
+        console.log('Webhook set successfully');
+    })
+    .catch((err) => {
+        console.error('Webhook error:', err.message);
+    });
+
+// Запуск Express сервера
+const PORT = process.env.SERVER_PORT || 3000;
+app.listen(PORT, function() {
+    console.log('Server started on port ' + PORT);
+    console.log('Webhook URL: ' + process.env.RENDER_EXTERNAL_URL + '/webhook');
 });
