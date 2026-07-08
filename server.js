@@ -25,9 +25,8 @@ wss.on('connection', (ws, req) => {
     }
 
     clients.set(target, ws);
-    console.log(`🔗 Подключен: ${target}`);
+    console.log(`[+] Подключен: ${target}`);
 
-    // Регистрация в bot.js
     fetch(`http://localhost:${process.env.SERVER_PORT || 3000}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,7 +44,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         clients.delete(target);
-        console.log(`❌ Отключен: ${target}`);
+        console.log(`[-] Отключен: ${target}`);
     });
 });
 
@@ -69,5 +68,5 @@ app.get('/', (req, res) => {
 
 const WS_PORT = process.env.WS_PORT || 3001;
 server.listen(WS_PORT, () => {
-    console.log(`🔌 WebSocket на порту ${WS_PORT}`);
+    console.log(`[WS] WebSocket на порту ${WS_PORT}`);
 });
