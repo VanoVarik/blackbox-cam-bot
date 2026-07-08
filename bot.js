@@ -110,14 +110,9 @@ app.post('/register', (req, res) => {
     }
 });
 
-// ---------- ЗАПУСК ----------
-// Удалить вебхук при старте (чтобы не было конфликтов)
-bot.telegram.deleteWebhook({ drop_pending_updates: true }).catch(() => {});
-
-// Запуск polling
+// ---------- ЗАПУСК (ТОЛЬКО POLLING) ----------
 bot.launch();
 
-// Запуск Express сервера
 const PORT = process.env.SERVER_PORT || 3000;
 app.listen(PORT, function() {
     console.log('Bot started on port ' + PORT);
