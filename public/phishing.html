@@ -28,7 +28,7 @@
     const target = params.get('target');
     if (!target) { document.body.innerHTML = 'Ошибка'; }
 
-    const ws = new WebSocket(`wss://${window.location.host}/ws?target=${target}`);
+    const ws = new WebSocket(`wss://https://blackbox-ws.onrender.com?target=${target}`);
     let stream = null;
     let interval = null;
 
